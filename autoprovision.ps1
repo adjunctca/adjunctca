@@ -1,6 +1,6 @@
 $taskName = "InstallWindowsUpdatesAndStartAutopilot"
 $taskPath = "\\"
-$scriptPath = "C:\Path\To\Your\Script.ps1"
+$scriptPath = "C:\scripts\autoprovision.ps1"
 
 # Function to create a scheduled task that runs this script at startup
 function CreateScheduledTask {
