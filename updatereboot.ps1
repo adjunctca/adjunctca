@@ -1,6 +1,6 @@
 ### Set execution policy
 Set-ExecutionPolicy Bypass -Scope CurrentUser -Force -Verbose
-
+$time = Get-Date -Format mm/dd/yyyy-hh:mm:ss
 ### Installing PSWindowsUpdate with(hopefully) no user intervention.
 Set-PSRepository -Name PSGallery -Verbose -InstallationPolicy Trusted
 Install-PackageProvider -Name NuGet -Force -Confirm:$false
@@ -8,52 +8,60 @@ Install-Module -Name PSWindowsUpdate -Verbose -Force -AllowClobber -SkipPublishe
 
 ### Importing PSWindowsUpdate
 Import-Module PSWindowsUpdate
-
-$logFile = (Get-Location).Path + "\updatereboot.log"
+### Start transcript logging
+Start-Transcript -Path "C:\scripts\updatereboot.log"
+### start time output
+Write-Output $time
 
 # Function to check for updates, install, and reboot if necessary
 function CheckAndInstallUpdates {
   $updateAvailable = Get-WindowsUpdate -Verbose
   if ($updateAvailable) {
-    Write-Output "Updates available. Installing..." >> $logFile
+    Write-Output "$time - Updates available. Installing..."
     Get-Windowsupdate -Install -AcceptAll -AutoReboot -Verbose
-    Write-Output "Rebooting to complete update installation..." >> $logFile
+    Write-Output "$time - Rebooting to complete update installation..." 
   } else {
-    Write-Output "No updates available." >> $logFile
-    # Check for existing registry key and remove if no updates
-    Remove-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Run -Name "Pre-AutoPilotUpdate" -ErrorAction SilentlyContinue -Verbose
-    Write-Output "Script complete. System is ready for Autopilot provisioning." >> $logFile
-    Write-Output "Removing script from startup/run registry key"
+    Write-Output "$time - No updates available." 
+    Write-Output "$time - Removing startup Script CMD"
+    ### Remove Startup CMD to break reboot/update loop
+    Remove-Item -Path 'C:\Users\defaultuser0\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\startupdates.cmd' -ErrorAction Continue
+    Write-Output "$time - Script complete. System is ready for Autopilot provisioning."
   }
 }
 
-# Function to add registry key for startup execution
-function AddStartupKey {
-  $scriptPath = "C:\scripts\updatereboot.ps1"  # Path to current script
-  New-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Run -Name "Pre-AutoPilotUpdate" -PropertyType String -Value $scriptPath -Verbose
-  Write-Output "Registry key added to run script at startup." >> $logFile
+# function to add startup cmd
+function Write-StartupFile {
+    $filePath = "C:\Users\defaultuser0\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\startupdates.cmd"
+    $linesToWrite = @(
+        "Powershell -Command Set-ExecutionPolicy Bypass -Force",
+        "Powershell C:\scripts\updatereboot.ps1"
+    )
+
+    ### Ensure Parents Directory already exists
+    $parentDir = Split-Path $filePath -Parent
+    if (!(Test-Path $parentDir)) {
+    New-Item -ItemType Directory -Force -Path $parentDir | Out-Null
+    }
+
+    # Create or overwrite the file
+    $null = New-Item $filePath
+
+    # Write lines out to file
+    $linesToWrite | Out-File -FilePath $filePath -Encoding UTF8 -Append
 }
 
-# Function to remove registry key for startup execution
-function RemoveStartupKey {
-  Remove-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Run -Name "Pre-AutoPilotUpdate" -ErrorAction SilentlyContinue -Verbose
-  Write-Output "Registry key removed for script startup execution." >> $logFile
+if (Test-Path "C:\Users\defaultuser0\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\startupdates.cmd") {
+    Write-Output "startupdates.cmd already exists, proceeding"
+} else {
+    Write-Output "startupdates.cmd does not already exist, creating startupdates.cmd now!"
+    Write-StartupFile
 }
-
-# Check for existing registry key before running update checks
-$existingKey = Get-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Run -Name "Pre-AutoPilotUpdate" -ErrorAction SilentlyContinue -Verbose
-
-if (!$existingKey) {
-  Write-Output "No existing registry key found. Adding one..." >> $logFile
-  AddStartupKey
-}
-
-
-
 
 # Start the update check and install process
 CheckAndInstallUpdates
 
-Write-Output "*" >> $logFile
-$scriptOutput = & CheckAndInstallUpdates
-Write-Output $scriptOutput >> $logFile
+### finish time output
+Write-Output $time
+
+### stop transcript logging
+Stop-Transcript
