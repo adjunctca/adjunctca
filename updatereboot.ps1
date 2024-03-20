@@ -13,25 +13,67 @@ Start-Transcript -Path "C:\scripts\updatereboot.log"
 ### Output start time
 Write-Output $time
 
+### FUNCTION TO INSTALL NSSM ###
+function Install-NSSM {
+    $nssmPath = "C:\Windows\System32\nssm.exe"
+
+    #Check if NSSM is already installed
+    if (Test-Path $nssmPath) {
+        Write-Host "NSSM is already installed, skipping!"
+        return
+    }
+
+    # Define URL and temp download path
+    $url = "https://nssm.cc/release/nssm-2.24.zip"
+    $tempZip = "C:\scripts\nssm-2.24.zip"
+    $tempExtractPath = "C:\scripts\nssm-2.24"
+
+    #Download NSSM Zip
+    Write-Host "Downloading NSSM..."
+    Invoke-WebRequest -Uri $url -OutFile $tempZip
+
+    #Extract Zip
+    Write-Host "Extracting NSSM..."
+    Expand-Archive -LiteralPath $tempZip -DestinationPath $tempExtractPath -Force
+
+    #Find the NSSM exec.
+    $nssmExePath = Get-ChildItem -Path $tempExtractPath\nssm-2.24\win64\ -filter nssm.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
+
+    #Move NSSM to System32
+    if ($null -ne $nssmExePath) {
+        Write-Host "Installing NSSM to $nssmPath ..."
+        Move-Item -Path $nssmExePath -Destination $nssmPath -Force
+        Write-Host "NSSM installation complete"
+    } else {
+        Write-Host "Could not find NSSM executable in extracted files!!! I'm DONE!"
+
+    }
+
+    # Cleanup the downloaded and extracted files
+    Remove-Item -Path $tempZip -Force
+    Remove-Item -Path $tempExtractPath -Recurse -Force
+
+}
+
 
 ### Function to create service which will run the update/reboot loop until all updates are complete ###
 function Create-UpdateService {
     #Check if service already exists
-    if (Get-Service -Name "apautoupdate" -ErrorAction SilentlyContinue) {
-        Write-Host "Service 'apautoupdate' already exists. Proceeding!"
+    if (Get-Service -Name "autoupd" -ErrorAction SilentlyContinue) {
+        Write-Host "Service 'autoupd' already exists. Skipping service install!"
     } else {
         ###create a service to run update script on startup 
         ###requires no user logon, therefore actually works in OOBE environment
-        sc.exe create apautoupdate binPath="C:\scripts\updatereboot.ps1" start=auto
-
-        Write-Host "Service 'apautoupdate' created successfully"
+        nssm install autoupd "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe" "C:\scripts\updatereboot.ps1"
+        nssm set autoupd Start SERVICE_AUTO_START
+        Write-Host "Service 'autoupd' created successfully"
     }
 } 
 
 ### Function to remove auto update service when all updates are complete ###
 function Remove-updateServiceAndNotify {
     # Remove the infinite update service!!!
-    sc.exe delete apautoupdate
+    nssm remove autoupd confirm
     Write-Host "Auto Update Service Removed..."
     Start-Process powershell.exe -ArgumentList "-Command Write-Host 'ALL UPDATES COMPLETE - SYSTEM IS READY FOR AUTOPILOT PROVISIONING!'; Read-Host -Prompt 'Press ENTER to close'"
 }
@@ -53,6 +95,8 @@ function CheckAndInstallUpdates {
 }
 
 
+### Install NSSM
+Install-NSSM
 
 ### Run Auto Update service function
 Create-UpdateService
