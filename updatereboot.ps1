@@ -88,7 +88,7 @@ function CheckAndInstallUpdates {
     #Restart-Computer
   } else {
     Write-Output "$time - No updates available." 
-    Write-Output "$time - Removing service 'apautoupdate'"
+    Write-Output "$time - Removing service 'autoupd'"
     Remove-updateServiceAndNotify
     Write-Output "$time - Script complete. System is ready for Autopilot provisioning."
   }
