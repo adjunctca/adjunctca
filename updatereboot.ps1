@@ -13,6 +13,18 @@ Start-Transcript -Path "C:\scripts\updatereboot.log"
 ### Output start time
 Write-Output $time
 
+### Scripts Path Creation / Check
+function Create-ScriptsDirectory {
+if (-Not (Test-Path -Path $path)) {
+    #If directory does not exist, create it 
+    New-Item -Path $path -ItemType Directory
+    Write-Output "Directory: 'C:\scripts' does not exist." 
+    Write-Output "Creating directory: 'C:\scripts'"
+} else {
+    # If scripts directory already exists
+    Write-Output "Directory: 'C:\Scripts' already exists. Proceeding..."
+
+
 ### FUNCTION TO INSTALL NSSM ###
 function Install-NSSM {
     $nssmPath = "C:\Windows\System32\nssm.exe"
