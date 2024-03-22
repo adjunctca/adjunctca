@@ -23,6 +23,8 @@ if (-Not (Test-Path -Path $path)) {
 } else {
     # If scripts directory already exists
     Write-Output "$time - Directory: 'C:\Scripts' already exists. Proceeding..."
+    }
+}
 
 
 ### FUNCTION TO INSTALL NSSM ###
