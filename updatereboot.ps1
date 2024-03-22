@@ -1,13 +1,15 @@
-### Set execution policy
+#Set execution policy
 Set-ExecutionPolicy Bypass -Scope CurrentUser -Force -Verbose
+
 $time = Get-Date -Format mm/dd/yyyy-hh:mm:ss
 $scriptspath = "C:\scripts"
-### Installing PSWindowsUpdate with(hopefully) no user intervention.
+
+#Installing PSWindowsUpdate with(hopefully) no user intervention.
 Set-PSRepository -Name PSGallery -Verbose -InstallationPolicy Trusted
 Install-PackageProvider -Name NuGet -Force -Confirm:$false
 Install-Module -Name PSWindowsUpdate -Verbose -Force -AllowClobber -SkipPublisherCheck -Confirm:$false
 
-### Scripts Path Creation / Check
+#Scripts Path Creation / Check
 function Create-ScriptsDirectory {
 if (-Not (Test-Path -Path $scriptspath)) {
     #If directory does not exist, create it 
@@ -20,19 +22,20 @@ if (-Not (Test-Path -Path $scriptspath)) {
     }
 }
 
-#Importing PSWindowsUpdate
-Import-Module PSWindowsUpdate
-#Start transcript logging
-Start-Transcript -Path "C:\scripts\updatereboot.log"
-#Print script start time
-Write-Output $time
-
 #Check/Create scripts directory
 Create-ScriptsDirectory
 
+#Importing PSWindowsUpdate
+Import-Module PSWindowsUpdate
+
+#Start transcript logging
+Start-Transcript -Path "C:\scripts\updatereboot.log"
+
+#Print script start time
+Write-Output $time
 
 
-### FUNCTION TO INSTALL NSSM ###
+#FUNCTION TO INSTALL NSSM
 function Install-NSSM {
     $nssmPath = "C:\Windows\System32\nssm.exe"
 
@@ -75,21 +78,21 @@ function Install-NSSM {
 }
 
 
-### Function to create service which will run the update/reboot loop until all updates are complete ###
+#Function to create service which will run the update/reboot loop until all updates are complete
 function Create-UpdateService {
     #Check if service already exists
     if (Get-Service -Name "autoupd" -ErrorAction SilentlyContinue) {
         Write-Host "$time - Service 'autoupd' already exists. Skipping service install!"
     } else {
-        ###create a service to run update script on startup 
-        ###requires no user logon, therefore actually works in OOBE environment
+        #Create a service to run update script on startup 
+        #Requires no user logon, therefore actually works in OOBE environment
         nssm install autoupd "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe" "C:\Windows\System32\updatereboot.ps1"
         nssm set autoupd Start SERVICE_AUTO_START
         Write-Host "$time - Service 'autoupd' created successfully"
     }
 } 
 
-### Function to remove auto update service when all updates are complete ###
+#Function to remove auto update service when all updates are complete
 function Remove-updateServiceAndNotify {
     # Remove the infinite update service!!!
     nssm remove autoupd confirm
@@ -97,7 +100,7 @@ function Remove-updateServiceAndNotify {
     Start-Process powershell.exe -ArgumentList "-Command Write-Host '$time - ALL UPDATES COMPLETE - SYSTEM IS READY FOR AUTOPILOT PROVISIONING!'; Read-Host -Prompt 'Press ENTER to close'"
 }
 
-# Function to check for updates, install, and reboot if necessary
+#Function to check for updates, install, and reboot if necessary
 function CheckAndInstallUpdates {
   $updateAvailable = Get-WindowsUpdate -Verbose
   if ($updateAvailable) {
@@ -127,5 +130,5 @@ CheckAndInstallUpdates
 #Print script finish time
 Write-Output $time
 
-### stop transcript logging
+#stop transcript logging
 Stop-Transcript
