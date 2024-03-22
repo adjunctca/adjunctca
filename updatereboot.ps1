@@ -10,7 +10,7 @@ Install-Module -Name PSWindowsUpdate -Verbose -Force -AllowClobber -SkipPublishe
 Import-Module PSWindowsUpdate
 ### Start transcript logging
 Start-Transcript -Path "C:\scripts\updatereboot.log"
-### Output start time
+### Print script start time
 Write-Output $time
 
 ### Scripts Path Creation / Check
@@ -18,11 +18,11 @@ function Create-ScriptsDirectory {
 if (-Not (Test-Path -Path $path)) {
     #If directory does not exist, create it 
     New-Item -Path $path -ItemType Directory
-    Write-Output "Directory: 'C:\scripts' does not exist." 
-    Write-Output "Creating directory: 'C:\scripts'"
+    Write-Output "$time - Directory: 'C:\scripts' does not exist." 
+    Write-Output "$time - Creating directory: 'C:\scripts'"
 } else {
     # If scripts directory already exists
-    Write-Output "Directory: 'C:\Scripts' already exists. Proceeding..."
+    Write-Output "$time - Directory: 'C:\Scripts' already exists. Proceeding..."
 
 
 ### FUNCTION TO INSTALL NSSM ###
@@ -31,7 +31,7 @@ function Install-NSSM {
 
     #Check if NSSM is already installed
     if (Test-Path $nssmPath) {
-        Write-Host "NSSM is already installed, skipping!"
+        Write-Host "$time - NSSM is already installed, skipping!"
         return
     }
 
@@ -41,11 +41,11 @@ function Install-NSSM {
     $tempExtractPath = "C:\scripts\nssm-2.24"
 
     #Download NSSM Zip
-    Write-Host "Downloading NSSM..."
+    Write-Host "$time - Downloading NSSM..."
     Invoke-WebRequest -Uri $url -OutFile $tempZip
 
     #Extract Zip
-    Write-Host "Extracting NSSM..."
+    Write-Host "$time - Extracting NSSM..."
     Expand-Archive -LiteralPath $tempZip -DestinationPath $tempExtractPath -Force
 
     #Find the NSSM exec.
@@ -53,11 +53,11 @@ function Install-NSSM {
 
     #Move NSSM to System32
     if ($null -ne $nssmExePath) {
-        Write-Host "Installing NSSM to $nssmPath ..."
+        Write-Host "$time - Installing NSSM to $nssmPath ..."
         Move-Item -Path $nssmExePath -Destination $nssmPath -Force
-        Write-Host "NSSM installation complete"
+        Write-Host "$time - NSSM installation complete"
     } else {
-        Write-Host "Could not find NSSM executable in extracted files!!! I'm DONE!"
+        Write-Host "$time - Could not find NSSM executable in extracted files!!! I'm DONE!"
 
     }
 
@@ -72,13 +72,13 @@ function Install-NSSM {
 function Create-UpdateService {
     #Check if service already exists
     if (Get-Service -Name "autoupd" -ErrorAction SilentlyContinue) {
-        Write-Host "Service 'autoupd' already exists. Skipping service install!"
+        Write-Host "$time - Service 'autoupd' already exists. Skipping service install!"
     } else {
         ###create a service to run update script on startup 
         ###requires no user logon, therefore actually works in OOBE environment
         nssm install autoupd "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe" "C:\scripts\updatereboot.ps1"
         nssm set autoupd Start SERVICE_AUTO_START
-        Write-Host "Service 'autoupd' created successfully"
+        Write-Host "$time - Service 'autoupd' created successfully"
     }
 } 
 
@@ -86,8 +86,8 @@ function Create-UpdateService {
 function Remove-updateServiceAndNotify {
     # Remove the infinite update service!!!
     nssm remove autoupd confirm
-    Write-Host "Auto Update Service Removed..."
-    Start-Process powershell.exe -ArgumentList "-Command Write-Host 'ALL UPDATES COMPLETE - SYSTEM IS READY FOR AUTOPILOT PROVISIONING!'; Read-Host -Prompt 'Press ENTER to close'"
+    Write-Host "$time - Auto Update Service Removed..."
+    Start-Process powershell.exe -ArgumentList "-Command Write-Host '$time - ALL UPDATES COMPLETE - SYSTEM IS READY FOR AUTOPILOT PROVISIONING!'; Read-Host -Prompt 'Press ENTER to close'"
 }
 
 # Function to check for updates, install, and reboot if necessary
@@ -102,7 +102,7 @@ function CheckAndInstallUpdates {
     Write-Output "$time - No updates available." 
     Write-Output "$time - Removing service 'autoupd'"
     Remove-updateServiceAndNotify
-    Write-Output "$time - Script complete. System is ready for Autopilot provisioning."
+    Write-Output "$time - ALL UPDATES COMPLETE. System is ready for Autopilot provisioning."
   }
 }
 
