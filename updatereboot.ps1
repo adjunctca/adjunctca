@@ -7,13 +7,6 @@ Set-PSRepository -Name PSGallery -Verbose -InstallationPolicy Trusted
 Install-PackageProvider -Name NuGet -Force -Confirm:$false
 Install-Module -Name PSWindowsUpdate -Verbose -Force -AllowClobber -SkipPublisherCheck -Confirm:$false
 
-### Importing PSWindowsUpdate
-Import-Module PSWindowsUpdate
-### Start transcript logging
-Start-Transcript -Path "C:\scripts\updatereboot.log"
-### Print script start time
-Write-Output $time
-
 ### Scripts Path Creation / Check
 function Create-ScriptsDirectory {
 if (-Not (Test-Path -Path $scriptspath)) {
@@ -26,6 +19,17 @@ if (-Not (Test-Path -Path $scriptspath)) {
     Write-Output "$time - Directory: 'C:\Scripts' already exists. Proceeding..."
     }
 }
+
+#Importing PSWindowsUpdate
+Import-Module PSWindowsUpdate
+#Start transcript logging
+Start-Transcript -Path "C:\scripts\updatereboot.log"
+#Print script start time
+Write-Output $time
+
+#Check/Create scripts directory
+Create-ScriptsDirectory
+
 
 
 ### FUNCTION TO INSTALL NSSM ###
@@ -109,8 +113,7 @@ function CheckAndInstallUpdates {
   }
 }
 
-#Check/Create scripts directory
-Create-ScriptsDirectory
+
 
 #Install NSSM
 Install-NSSM
