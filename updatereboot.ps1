@@ -1,6 +1,7 @@
 ### Set execution policy
 Set-ExecutionPolicy Bypass -Scope CurrentUser -Force -Verbose
 $time = Get-Date -Format mm/dd/yyyy-hh:mm:ss
+$scriptspath = "C:\scripts"
 ### Installing PSWindowsUpdate with(hopefully) no user intervention.
 Set-PSRepository -Name PSGallery -Verbose -InstallationPolicy Trusted
 Install-PackageProvider -Name NuGet -Force -Confirm:$false
@@ -15,9 +16,9 @@ Write-Output $time
 
 ### Scripts Path Creation / Check
 function Create-ScriptsDirectory {
-if (-Not (Test-Path -Path $path)) {
+if (-Not (Test-Path -Path $scriptspath)) {
     #If directory does not exist, create it 
-    New-Item -Path $path -ItemType Directory
+    New-Item -Path $scriptspath -ItemType Directory
     Write-Output "$time - Directory: 'C:\scripts' does not exist." 
     Write-Output "$time - Creating directory: 'C:\scripts'"
 } else {
