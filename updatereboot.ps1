@@ -106,19 +106,19 @@ function CheckAndInstallUpdates {
   }
 }
 
+#Check/Create scripts directory
+Create-ScriptsDirectory
 
-### Install NSSM
+#Install NSSM
 Install-NSSM
 
-### Run Auto Update service function
+#Create service for update + reboot loop
 Create-UpdateService
 
-### Check for updates
-### If updates available, install and reboot ###
-### When updates complete, delete auto update service and output done message ###
+#Run updates and reboot if necessary
 CheckAndInstallUpdates
 
-### finish time output
+#Print script finish time
 Write-Output $time
 
 ### stop transcript logging
