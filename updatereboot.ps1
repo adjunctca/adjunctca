@@ -84,8 +84,8 @@ function Create-UpdateService {
     if (Get-Service -Name "autoupd" -ErrorAction SilentlyContinue) {
         Write-Host "$time - Service 'autoupd' already exists. Skipping service install!"
     } else {
-        #Create a service to run update script on startup 
-        #Requires no user logon, therefore actually works in OOBE environment
+        ###Create a service to run update script on startup###
+        ###Requires no user logon, therefore actually works in OOBE environment###
         nssm install autoupd "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe" "C:\Windows\System32\updatereboot.ps1"
         nssm set autoupd Start SERVICE_AUTO_START
         Write-Host "$time - Service 'autoupd' created successfully"
