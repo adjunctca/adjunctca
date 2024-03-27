@@ -100,21 +100,40 @@ function Remove-updateServiceAndNotify {
     Start-Process powershell.exe -ArgumentList "-Command Write-Host '$time - ALL UPDATES COMPLETE - SYSTEM IS READY FOR AUTOPILOT PROVISIONING!'; Read-Host -Prompt 'Press ENTER to close'"
 }
 
-#Function to check for updates, install, and reboot if necessary
 function CheckAndInstallUpdates {
-  $updateAvailable = Get-WindowsUpdate -Verbose
+  # List of KBs to exclude
+  $excludedKBs = @('KB5034441')
+
+  # Get list of all available updates
+  $updateAvailable = Get-WindowsUpdate -Verbose | Where-Object {
+    # Filter out updates based on the excluded KB list
+    $exclude = $false
+    foreach ($kb in $excludedKBs) {
+      if ($_.KBArticleIDs -contains $kb) {
+        $exclude = $true
+        break
+      }
+    }
+    -not $exclude
+  }
+
   if ($updateAvailable) {
     Write-Output "$time - Updates available. Installing..."
-    Get-Windowsupdate -Install -AcceptAll -Verbose -AutoReboot
+    foreach ($update in $updateAvailable) {
+      Write-Output "Installing update: $($update.Title)"
+      # Install each update individually
+      Install-WindowsUpdate -Update $update -AcceptAll -Verbose -AutoReboot
+    }
     Write-Output "$time - Rebooting to complete update installation..." 
     #Restart-Computer
   } else {
-    Write-Output "$time - No updates available." 
+    Write-Output "$time - No updates available or all available updates are excluded." 
     Write-Output "$time - Removing service 'autoupd'"
     Remove-updateServiceAndNotify
     Write-Output "$time - ALL UPDATES COMPLETE. System is ready for Autopilot provisioning."
   }
 }
+
 
 
 
